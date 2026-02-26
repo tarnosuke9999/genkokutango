@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>現代文単語 クイズ</title>
+    <style>
+        :root {
+            --bg-color: #f5f7fa;
+            --container-bg: white;
+            --accent-color: #1da1f2;
+        }
+        body { font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif; background-color: var(--bg-color); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; transition: background-color 0.3s; }
+        body.wrong-mode { --bg-color: #4a4e52; --container-bg: #ffffff; }
+        
+        .quiz-container { background: var(--container-bg); width: 90%; max-width: 600px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); position: relative; min-height: 350px; display: flex; flex-direction: column; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+        .id-display { font-weight: bold; font-size: 1.2rem; color: #657786; }
+        .title { font-size: 1.2rem; font-weight: 800; color: var(--accent-color); }
+        
+        .counter-area { text-align: center; font-size: 0.9rem; color: #e0245e; font-weight: bold; margin-bottom: 10px; height: 20px; }
+        .meaning-box { font-size: 1.3rem; font-weight: bold; line-height: 1.5; margin-bottom: 30px; color: #14171a; text-align: center; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
+        
+        .input-area { text-align: center; margin-bottom: 50px; }
+        input[type="text"] { width: 80%; padding: 12px; font-size: 1.1rem; border: 2px solid #e1e8ed; border-radius: 8px; outline: none; }
+        input[type="text"]:focus { border-color: var(--accent-color); }
+        
+        .msg { margin-top: 15px; height: 24px; font-size: 0.95rem; font-weight: bold; }
+        .hint { color: #f45d48; }
+        .correct { color: #17bf63; }
+        .error { color: #e0245e; }
+
+        .mode-btn { position: absolute; bottom: 20px; right: 20px; padding: 10px 15px; background: var(--accent-color); color: white; border: none; border-radius: 20px; cursor: pointer; font-size: 0.85rem; font-weight: bold; transition: opacity 0.2s; }
+        .mode-btn:hover { opacity: 0.8; }
+        .mode-btn.all-mode { background: #657786; }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <div class="header">
+        <div id="word-id" class="id-display">---</div>
+        <div class="title">現代文単語 クイズ</div>
+    </div>
+
+    <div id="counter" class="counter-area"></div>
+    <div id="meaning" class="meaning-box">読み込み中...</div>
+
+    <div class="input-area">
+        <input type="text" id="answer-input" placeholder="単語を入力してEnter" autocomplete="off">
+        <div id="message" class="msg"></div>
+    </div>
+
+    <button id="mode-toggle" class="mode-btn">間違えた問題を学習</button>
+</div>
+
+<script>
+    const allWords = [
+        {id: "475", word: "姑息", meaning: "一時しのぎに合わせ。その場のがれ。"},
+        {id: "476", word: "地団駄を踏む", meaning: "悔しがって激しく何度も地面を踏む。"},
+        {id: "477", word: "自嘲", meaning: "自分で自分を軽蔑しあざ笑うこと。"},
+        {id: "478", word: "奢侈", meaning: "身分以上、必要以上のぜいたく。"},
+        {id: "479", word: "常軌を逸する", meaning: "常識からはずれた言動をする。"},
+        {id: "480", word: "呻吟", meaning: "苦しみうめくこと。"},
+        {id: "481", word: "渾身", meaning: "からだ全体。"},
+        {id: "482", word: "節操", meaning: "信念をかたく守って変えないこと。"},
+        {id: "483", word: "戦慄", meaning: "恐ろしくて身震いすること。"},
+        {id: "484", word: "俎上に載せる", meaning: "批評などの対象として取り上げる。"},
+        {id: "485", word: "たかをくくる", meaning: "たいしたことはないと見びる。あなどる。"},
+        {id: "486", word: "たじろぐ", meaning: "気後れしてためらう。しりごみする。"},
+        {id: "487", word: "棚上げ", meaning: "解決や処理を一時保留にして先にのばすこと。"},
+        {id: "488", word: "陶然", meaning: "われを忘れてうっとりするさま。"},
+        {id: "489", word: "なおざり", meaning: "いいかげんにして放っておくこと。"},
+        {id: "490", word: "ねぎらう", meaning: "苦労した人をいたわり慰める。骨折りに対して礼を言う。"},
+        {id: "491", word: "はばかる", meaning: "①幅をきかす。のさばる。②気がねする。遠慮する。"},
+        {id: "492", word: "反芻", meaning: "繰り返し考えたり味わったりすること。"},
+        {id: "493", word: "ひるむ", meaning: "気力がくじける。おじけづく。"},
+        {id: "494", word: "辟易", meaning: "①ひどく迷惑して、うんざりすること。②勢いに押されてしりごみすること。"},
+        {id: "495", word: "躍起になる", meaning: "むきになる。必死になる。"},
+        {id: "496", word: "踵を返す", meaning: "あともどりをする。引き返す。"},
+        {id: "497", word: "吝嗇", meaning: "極度に物惜しみするさま。けち。"},
+        {id: "498", word: "訝しい", meaning: "気がかりだ。不審だ。"},
+        {id: "499", word: "悪びれる", meaning: "気後れして、おどおどする。"},
+        {id: "500", word: "物怖じ", meaning: "物事を怖がること。おじけづくこと。"},
+        {id: "501", word: "仏頂面", meaning: "無愛想な顔。不機謙な顔つき。"},
+        {id: "502", word: "拍子抜け", meaning: "気負っていたのに急に張り合いがなくなること。"},
+        {id: "503", word: "あらがう", meaning: "逆らう。抵抗する。"},
+        {id: "504", word: "あんぱい", meaning: "ほどあい。加減。物事や身体の具合。"},
+        {id: "505", word: "矢面", meaning: "質問・非難・攻撃の集中する立場。"},
+        {id: "506", word: "判官贔屓", meaning: "弱い者や負けた者に対し、同情し味方すること。"},
+        {id: "507", word: "口実", meaning: "言い逃れや言いがかりの材料。"},
+        {id: "508", word: "甘受", meaning: "逆らうことなく甘んじて受ける。"},
+        {id: "509", word: "酔狂", meaning: "物好き。"},
+        {id: "510", word: "ほうける", meaning: "知覚の鈍った状態になる。ぼんやりする。"},
+        {id: "511", word: "たわいない", meaning: "とりとめがない。手ごたえがない。だらしない。"},
+        {id: "512", word: "流暢", meaning: "言葉遣いがすらすらとしてよどみのないこと。"},
+        {id: "513", word: "貪婪", meaning: "非常に欲が深いこと。"},
+        {id: "514", word: "うごめく", meaning: "虫がはうように絶えずもぞもぞ動く。"},
+        {id: "515", word: "うしろめたい", meaning: "やまいいところがあるので気が引ける。"},
+        {id: "516", word: "面はゆい", meaning: "恥ずかしい。照れくさい。きまり悪い。"},
+        {id: "517", word: "気後れ", meaning: "おじけづいて心がひるむこと。"},
+        {id: "518", word: "気をのまれる", meaning: "気持ちのうえで圧倒される。"},
+        {id: "519", word: "恍惚", meaning: "うっとりするさま。ぼんやりしてはっきりしないさま。"},
+        {id: "520", word: "心許ない", meaning: "頼りなく不安で、心が落ち着かない。"},
+        {id: "521", word: "所在ない", meaning: "することがなく退屈である。"},
+        {id: "522", word: "憔悴", meaning: "病気や心労のためにやせおとろえること。やつれること。"},
+        {id: "523", word: "垂涎", meaning: "あるものを非常に強く欲しがること。"},
+        {id: "524", word: "ばつが悪い", meaning: "その場のなりゆき上、具合が悪く恥ずかしい。"},
+        {id: "525", word: "あっけにとられる", meaning: "意外なことに出合って驚きあきれる。"},
+        {id: "526", word: "おののく", meaning: "おそれ震える。"},
+        {id: "527", word: "安堵", meaning: "気がかりなことが除かれて安心すること。ほっとすること。"},
+        {id: "528", word: "蓼食う虫も好き好き", meaning: "人の好みはさまざまである。"},
+        {id: "529", word: "当惑", meaning: "どうしたらよいかわからず困ること。途方に暮れること。"},
+        {id: "530", word: "焦燥", meaning: "いらいらしてあせること。"},
+        {id: "531", word: "匙を投げる", meaning: "救いようがなく断念する。"},
+        {id: "532", word: "うさんくさい", meaning: "どことなく疑わしい。何となく怪しい。"},
+        {id: "533", word: "おこがましい", meaning: "出しゃばっている。思い上がっている。ばかげていてみっともない。"},
+        {id: "534", word: "潮時", meaning: "ちょうどよい時。好機。"},
+        {id: "535", word: "是非もない", meaning: "しかたがない。やむをえない。"},
+        {id: "536", word: "よんどころない", meaning: "やむをえない。"},
+        {id: "537", word: "理不尽", meaning: "道理に合わないさま。無理やり。"},
+        {id: "538", word: "既視感", meaning: "初めての経験なのに、経験したことがあるように感ずること。"},
+        {id: "539", word: "あさましい", meaning: "嘆かわしい。情けない。見苦しい。思いがけない。"},
+        {id: "540", word: "間が悪い", meaning: "きまりが悪い。気恥ずかしい。運が悪い。"},
+        {id: "541", word: "因習", meaning: "昔から伝わっている風習。"},
+        {id: "542", word: "隠微", meaning: "はっきりとは表に現れず、わかりにくいさま。"},
+        {id: "543", word: "お誂え向き", meaning: "希望していたとおりであること。注文どおりであること。"},
+        {id: "544", word: "醸す", meaning: "ある事態や雰囲気などを（しだいに）作り出す。"},
+        {id: "545", word: "拮抗", meaning: "力に優劣がなく互いに張り合うこと。"},
+        {id: "546", word: "軌を一にする", meaning: "やり方、行き方、立場が同じである。"},
+        {id: "547", word: "しっぺ返し", meaning: "ある仕打ちを受けて、すぐに仕返しをすること。"},
+        {id: "548", word: "小康", meaning: "病気が少しよくなりかけて、落ち着いていること。"},
+        {id: "549", word: "瀟洒", meaning: "すっきりと洗練されているさま。"},
+        {id: "550", word: "たたずまい", meaning: "立っている様子。物事のありさま。雰囲気。"},
+        {id: "551", word: "通俗的", meaning: "一般向き。ありきたり。"},
+        {id: "552", word: "清冽", meaning: "清らかで冷たいこと。"},
+        {id: "553", word: "陳腐", meaning: "ありふれて平凡なさま。古くさいさま。"},
+        {id: "554", word: "拍車をかける", meaning: "物事の進行に一段と力をそえる。"},
+        {id: "555", word: "なけなし", meaning: "ほんの少ししかないこと。ほとんどないこと。"},
+        {id: "556", word: "なしくずし", meaning: "物事を少しずつ済ませたりおこなったりするさま。"},
+        {id: "557", word: "はかがいく", meaning: "(仕事などが)順調に進む。はかどる。"},
+        {id: "558", word: "白眉", meaning: "同種のものの中で最も優れている人や物。"},
+        {id: "559", word: "まがまがしい", meaning: "不吉である。縁起が悪い。"},
+        {id: "560", word: "ものものしい", meaning: "いかめしい。厳重である。大げさである。"},
+        {id: "561", word: "錯綜", meaning: "複雑に入り組むこと。入り混じること。"},
+        {id: "562", word: "絵空事", meaning: "架空の作り事。実際にはありえないこと。"},
+        {id: "563", word: "無聊", meaning: "退屈なこと。暇なこと。"},
+        {id: "564", word: "未曾有", meaning: "いまだかつてなかった。きわめて珍しい。"},
+        {id: "565", word: "温床", meaning: "ある物事が生まれ育ちやすい環境。"},
+        {id: "566", word: "抜き差しならない", meaning: "身動きがとれない。どうにもならない。"},
+        {id: "567", word: "安全弁", meaning: "危険を前もって防ぐのに役立つもの。"},
+        {id: "568", word: "体裁をなす", meaning: "ある様子や外観が出来上がる。"},
+        {id: "569", word: "いたちごっこ", meaning: "双方が同じことを繰り返し、無益なさま。"},
+        {id: "570", word: "まやかし", meaning: "あざむきだますこと。ごまかすこと。にせもの。"},
+        {id: "571", word: "馬が合う", meaning: "気が合う。意気投合する。"},
+        {id: "572", word: "蚊帳の外", meaning: "物事に関われない位置に置かれること。"},
+        {id: "573", word: "肝胆相照らす", meaning: "互いに心の底まで打ち明けて親しく交わる。"},
+        {id: "574", word: "人口に膾炙する", meaning: "人々にもてはやされる。広く知られる。"},
+        {id: "575", word: "青天の霹靂", meaning: "突然に起こる変動。思いがけない突発的な大事件。"},
+        {id: "576", word: "名状しがたい", meaning: "言葉で表現しがたい。"},
+        {id: "577", word: "無用の長物", meaning: "あっても役に立たず、かえってじゃまになるもの。"},
+        {id: "578", word: "お仕着せ", meaning: "他から一方的に与えられた事柄。習慣化した事柄。"},
+        {id: "579", word: "しがらみ", meaning: "せき止めるもの。断ちがたい関係や拘束。"},
+        {id: "580", word: "些末", meaning: "取るに足りないこと。わずかなこと。"},
+        {id: "581", word: "成就", meaning: "成し遂げること。願いなどがかなうこと。"},
+        {id: "582", word: "牧歌的", meaning: "牧歌のように素朴で叙情が豊かなさま。素朴でのどかなさま。"},
+        {id: "583", word: "ひとしなみに", meaning: "同等に。一様に。同様に。"},
+        {id: "584", word: "爪に火をともす", meaning: "過度の倹約をする。"},
+        {id: "585", word: "沽券にかかわる", meaning: "評判や品位や体面に差し支える。"},
+        {id: "586", word: "確執", meaning: "互いに自分の意見を主張して譲らないこと。"},
+        {id: "587", word: "息吹", meaning: "呼吸。活動の気配。生気。"},
+        {id: "588", word: "恩寵", meaning: "(神や君主の)恵み。いつくしみ。"},
+        {id: "589", word: "いきさつ", meaning: "物事の成り行きや経過。込み入った事情や関係。"},
+        {id: "590", word: "しのぎを削る", meaning: "はげしく争う。"},
+        {id: "591", word: "羽目", meaning: "(好ましくない)状況や事態。苦境。"},
+        {id: "592", word: "いさかい", meaning: "言い争い。けんか。"},
+        {id: "593", word: "いくばくもない", meaning: "あとわずか・まもなく・いくらもない。"},
+        {id: "594", word: "由来", meaning: "事の起こり。起源。来歴。"},
+        {id: "595", word: "いたいたけ", meaning: "幼くて弱々しくかわいらしいさま。"},
+        {id: "596", word: "鷹揚", meaning: "ゆったりと落ち着いているさま。"},
+        {id: "597", word: "きかぬ気", meaning: "負けるのを嫌う。勝ち気の。"},
+        {id: "598", word: "奇矯", meaning: "言動が普通でない。"},
+        {id: "599", word: "気骨", meaning: "自分の信念を曲げない強い気性。"},
+        {id: "600", word: "几帳面", meaning: "すみずみまで規則正しく、きちんとしているさま。"},
+        {id: "601", word: "怯懦", meaning: "臆病で意志の弱いさま。"},
+        {id: "602", word: "屈託", meaning: "心配事でくよくよすること。こだわり。"},
+        {id: "603", word: "年端のいかない", meaning: "年齢が幼い。"},
+        {id: "604", word: "したたか", meaning: "強くて手ごわいさま。ひどく。"},
+        {id: "605", word: "如才ない", meaning: "手抜かりがない。気がきく。愛想がいい。"},
+        {id: "606", word: "寵児", meaning: "特別かわいがられる子。世間でもてはやされる人。"},
+        {id: "607", word: "朴訥", meaning: "かざりけがなく話し下手なこと。"},
+        {id: "608", word: "けなげ", meaning: "(弱い者が)困難な状況で懸命に振る舞うさま。"},
+        {id: "609", word: "洒脱", meaning: "俗っぽくなく、洗練され、さっぱりしていること。"},
+        {id: "610", word: "剽軽", meaning: "気軽で滑稽なこと。おどけること。"},
+        {id: "611", word: "生一本", meaning: "純粋でまじりけのないこと。"},
+        {id: "612", word: "凛々しい", meaning: "きりりと引き締まっていて勇ましい。"},
+        {id: "613", word: "自尊心", meaning: "自分を尊ぶ気持ち。"},
+        {id: "614", word: "不羈", meaning: "自由奔放で束縛できない。"},
+        {id: "615", word: "物心", meaning: "世間の物事や人情について理解し判断できる心。"},
+        {id: "616", word: "度しがたい", meaning: "救いがたい。納得させようがない。"},
+        {id: "617", word: "ぼくねんじん", meaning: "無愛想な人。もののわかりの悪い人。わからずや。"},
+        {id: "618", word: "人好きのする", meaning: "多くの人に好かれる。好感を与える。"},
+        {id: "619", word: "いじらしい", meaning: "可憐で痛々しく、心が動かされるさま。"},
+        {id: "620", word: "華奢", meaning: "姿が細く上品なさま。弱々しく姿の美しいさま。"},
+        {id: "621", word: "頑是ない", meaning: "幼くて物事の良し悪しがわからない。あどけなく無邪気だ。"},
+        {id: "622", word: "独善", meaning: "自分ひとりだけが正しいと考えること。"},
+        {id: "623", word: "生粋", meaning: "まじりけがないこと。純粋。"},
+        {id: "624", word: "脆弱", meaning: "もろく弱いこと。"},
+        {id: "625", word: "老獪", meaning: "経験を積んでいて、悪がしこいさま。"},
+        {id: "626", word: "不世出", meaning: "めったに世に現れないほど優れていること。"},
+        {id: "627", word: "好事家", meaning: "物好きな人。風流を好む人。"},
+        {id: "628", word: "臆面もない", meaning: "気後れした様子がない。"},
+        {id: "629", word: "鉄面皮", meaning: "あつかましいこと。恥知らず。"},
+        {id: "630", word: "ひひとかどの", meaning: "ひときわ優れている。一人前の。"},
+        {id: "631", word: "面目", meaning: "世間からうける評価。名誉や体裁。"},
+        {id: "632", word: "悄然", meaning: "元気がない。しおれたさま。"},
+        {id: "633", word: "憮然", meaning: "失望や不満でやりきれないさま。"},
+        {id: "634", word: "甘んずる", meaning: "仕方なく受け入れる。"},
+        {id: "635", word: "(肌が)粟立つ", meaning: "寒さや恐怖で皮膚にぶつぶつができること。"},
+        {id: "636", word: "口を糊する", meaning: "やっと食べていく。やっと生計を立てる。"},
+        {id: "637", word: "ほぞをかむ", meaning: "後悔すること。及ばないことを悔やむ。"},
+        {id: "638", word: "目(眼)を瞠る", meaning: "驚きや感心のあまり目を大きく見開く。"},
+        {id: "639", word: "眉をひそめる", meaning: "心配事や不快なことなどに対して顔をしかめる。"},
+        {id: "640", word: "身の丈に合う", meaning: "その人自身にふさわしい。"},
+        {id: "641", word: "浮き足立つ", meaning: "動揺する。逃げ出しそうな態度になる。"},
+        {id: "642", word: "眼光紙背に徹す", meaning: "書物を読んで、文面の奥にある深い意義を読み取る。"},
+        {id: "643", word: "腰が低い", meaning: "他人に対して謙虚で丁重な態度をとる。"},
+        {id: "644", word: "腰を折る", meaning: "中途で妨げる。"},
+        {id: "645", word: "鼻を明かす", meaning: "優位な相手を出し抜いて驚かせる。"},
+        {id: "646", word: "鼻白む", meaning: "きまり悪い顔をする。興ざめする。"},
+        {id: "647", word: "閉口", meaning: "困り果てること。うんざりすること。"},
+        {id: "648", word: "肝に銘じる", meaning: "心に深く刻み込むように記憶して忘れない。"},
+        {id: "649", word: "饒舌", meaning: "口数が多いこと。おしゃべり。"},
+        {id: "650", word: "胸のすく", meaning: "心のつかえが取れてさわやかになる。"},
+        {id: "651", word: "のっぴきならない", meaning: "動きがとれない。どうにもならない。"},
+        {id: "652", word: "ゆかり", meaning: "血のつながりや関係。"},
+        {id: "653", word: "かしずく", meaning: "人に仕えて守り世話をする。子を大切に育てる。"},
+        {id: "654", word: "判然としない", meaning: "はっきりしない。明確でない。"},
+        {id: "655", word: "彷彿とする", meaning: "連想する。ありありと思い浮かぶ。"},
+        {id: "656", word: "言わずもがな", meaning: "言うまでもない。言わないほうがよい。"},
+        {id: "657", word: "もとる", meaning: "そむく。道理に反する。"},
+        {id: "658", word: "疎開", meaning: "被害を避けるため人や物を他の地に移すこと。"},
+        {id: "659", word: "うべなう", meaning: "同意する。肯定する。承知する。"},
+        {id: "660", word: "毫も", meaning: "いささかも。少しも。"},
+        {id: "661", word: "当為", meaning: "当然そうあるべきこと。当然なすべきこと。"},
+        {id: "662", word: "吾人", meaning: "われわれ。われら。"},
+        {id: "663", word: "細君", meaning: "妻。奥さん。"},
+        {id: "664", word: "権化", meaning: "ある抽象的特質を具体化したもの。"},
+        {id: "665", word: "伍する", meaning: "仲間に入る。同等の位置に並ぶ。"},
+        {id: "666", word: "くみする", meaning: "賛成して味方となる。協力する。"},
+        {id: "667", word: "往時", meaning: "過ぎ去った時。昔。"},
+        {id: "668", word: "よすが", meaning: "よりどころ。手がかり。"},
+        {id: "669", word: "かこつ", meaning: "恨み嘆く。ぐちを言う。"},
+        {id: "670", word: "殉教", meaning: "信じる宗教のために命を捨てること。"},
+        {id: "671", word: "言霊のさきはう国", meaning: "言葉の霊力が幸いをもたらす国。"},
+        {id: "672", word: "たつき", meaning: "手段。方法。"},
+        {id: "673", word: "畢竟", meaning: "つまるところ。結局のところ。"},
+        {id: "674", word: "料簡", meaning: "考え。気持ち。"},
+        {id: "675", word: "やおら", meaning: "落ち着いてゆっくりと。"},
+        {id: "676", word: "おもむろに", meaning: "静かに。落ち着いてゆっくりと。"},
+        {id: "677", word: "おしなべて", meaning: "すべて一様に。皆等しく。総じて。"},
+        {id: "678", word: "あながち", meaning: "必ずしも。一概に。"},
+        {id: "679", word: "いたずらに", meaning: "むだに。意味もなく。むやみに。"},
+        {id: "680", word: "さしずめ", meaning: "落ち着くところは。つまるところ。さしあたり。"},
+        {id: "681", word: "ゆくりなく", meaning: "思いがけず。不意に。偶然に。"},
+        {id: "682", word: "からくも", meaning: "やっとのことで。かろうじて。"},
+        {id: "683", word: "なかんずく", meaning: "とりわけ。特に。"},
+        {id: "684", word: "つくづくと", meaning: "じっくりと。よくよく。"},
+        {id: "685", word: "やにわに", meaning: "すぐさま。だしぬけに。突然。"},
+        {id: "686", word: "あまつさえ", meaning: "そればかりでなく。おまけに。"},
+        {id: "687", word: "あっけらかんと", meaning: "何事もなかったように平然としているさま。けろっとしているさま。"},
+        {id: "688", word: "さめざめ", meaning: "涙を流して静かに泣き続けるさま。"},
+        {id: "689", word: "おずおず", meaning: "おびえたり自信がなかったりしておらうさま。"},
+        {id: "690", word: "ゆめゆめ", meaning: "決して(〜ない)。きっと(〜ない)。"},
+        {id: "691", word: "生返事", meaning: "いい加減な返事。あいまいな返事。気のない返事。"},
+        {id: "692", word: "こざかしい", meaning: "利口ぶってなまいきである。ずるがしこい。"},
+        {id: "693", word: "うそ寒い", meaning: "なんとなく寒々している。"},
+        {id: "694", word: "空元気", meaning: "うわべだけ元気そうに見せかけること。"},
+        {id: "695", word: "これみよがし", meaning: "(これを見よと言わんばかりに)得意そうに見せつけるさま。あてつけがましいさま。"},
+        {id: "696", word: "あらずもがな", meaning: "ないほうがよい。あっても無意味である。"},
+        {id: "697", word: "気色ばむ", meaning: "怒りを表情や態度に表す。"},
+        {id: "698", word: "道すがら", meaning: "道を歩きながら。行く道の途中で。"}
+    ];
+
+    let currentMode = "all"; // "all" or "wrong"
+    let wrongWords = [];
+    let currentQuestion = null;
+    let missCount = 0;
+
+    const idEl = document.getElementById('word-id');
+    const meaningEl = document.getElementById('meaning');
+    const inputEl = document.getElementById('answer-input');
+    const messageEl = document.getElementById('message');
+    const counterEl = document.getElementById('counter');
+    const modeBtn = document.getElementById('mode-toggle');
+
+    function nextQuestion() {
+        missCount = 0;
+        messageEl.textContent = "";
+        inputEl.value = "";
+        
+        let targetList = currentMode === "all" ? allWords : wrongWords;
+        
+        if (currentMode === "wrong") {
+            if (targetList.length === 0) {
+                meaningEl.textContent = "🎉 クリア！すべての間違いを克服しました！";
+                counterEl.textContent = "残り 0 問";
+                setTimeout(() => toggleMode(), 2000);
+                return;
+            }
+            counterEl.textContent = `残り ${targetList.length} 問`;
+        } else {
+            counterEl.textContent = "";
+        }
+
+        const randomIndex = Math.floor(Math.random() * targetList.length);
+        currentQuestion = targetList[randomIndex];
+        
+        idEl.textContent = currentQuestion.id;
+        meaningEl.textContent = currentQuestion.meaning;
+        inputEl.focus();
+    }
+
+    function toggleMode() {
+        if (currentMode === "all") {
+            if (wrongWords.length === 0) {
+                alert("まだ間違えた問題がありません。まずは通常モードで解いてみましょう！");
+                return;
+            }
+            currentMode = "wrong";
+            document.body.classList.add('wrong-mode');
+            modeBtn.textContent = "すべての単語を学習する";
+            modeBtn.classList.add('all-mode');
+        } else {
+            currentMode = "all";
+            document.body.classList.remove('wrong-mode');
+            modeBtn.textContent = "間違えた問題を学習";
+            modeBtn.classList.remove('all-mode');
+        }
+        nextQuestion();
+    }
+
+    inputEl.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            const userAnswer = inputEl.value.trim();
+            if (userAnswer === currentQuestion.word) {
+                // 正解
+                messageEl.textContent = "正解！";
+                messageEl.className = "msg correct";
+                
+                if (currentMode === "wrong") {
+                    // 間違えたリストから削除
+                    wrongWords = wrongWords.filter(w => w.id !== currentQuestion.id);
+                }
+                
+                setTimeout(nextQuestion, 600);
+            } else {
+                // 不正解
+                missCount++;
+                
+                // 間違えたリストに追加（まだ入っていなければ）
+                if (!wrongWords.some(w => w.id === currentQuestion.id)) {
+                    wrongWords.push(currentQuestion);
+                }
+
+                if (missCount >= 3) {
+                    messageEl.textContent = `答えは「${currentQuestion.word}」でした。`;
+                    messageEl.className = "msg error";
+                    setTimeout(nextQuestion, 2000);
+                } else {
+                    const firstChar = currentQuestion.word.charAt(0);
+                    messageEl.textContent = `不正解！ ヒント：一文字目は「${firstChar}」`;
+                    messageEl.className = "msg hint";
+                    inputEl.value = "";
+                }
+            }
+        }
+    });
+
+    modeBtn.addEventListener('click', toggleMode);
+
+    // 初期起動
+    nextQuestion();
+</script>
+
+</body>
+</html>
