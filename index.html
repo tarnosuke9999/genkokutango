@@ -2,36 +2,59 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>現代文単語 クイズ</title>
     <style>
         :root {
             --bg-color: #f5f7fa;
             --container-bg: white;
             --accent-color: #1da1f2;
+            --container-width: 90%;
+            --max-width: 600px;
         }
-        body { font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif; background-color: var(--bg-color); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; transition: background-color 0.3s; }
-        body.wrong-mode { --bg-color: #4a4e52; --container-bg: #ffffff; }
         
-        .quiz-container { background: var(--container-bg); width: 90%; max-width: 600px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); position: relative; min-height: 350px; display: flex; flex-direction: column; }
-        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-        .id-display { font-weight: bold; font-size: 1.2rem; color: #657786; }
-        .title { font-size: 1.2rem; font-weight: 800; color: var(--accent-color); }
+        body { font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif; background-color: var(--bg-color); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; transition: background-color 0.3s; overflow-x: hidden; }
         
-        .counter-area { text-align: center; font-size: 0.9rem; color: #e0245e; font-weight: bold; margin-bottom: 10px; height: 20px; }
-        .meaning-box { font-size: 1.3rem; font-weight: bold; line-height: 1.5; margin-bottom: 30px; color: #14171a; text-align: center; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
+        /* スマホモード有効時 */
+        body.mobile-mode { --max-width: 360px; }
+        body.wrong-mode { --bg-color: #343a40; }
+
+        .quiz-container { background: var(--container-bg); width: var(--container-width); max-width: var(--max-width); padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); position: relative; min-height: 400px; display: flex; flex-direction: column; transition: all 0.3s ease; }
         
-        .input-area { text-align: center; margin-bottom: 50px; }
-        input[type="text"] { width: 80%; padding: 12px; font-size: 1.1rem; border: 2px solid #e1e8ed; border-radius: 8px; outline: none; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #f0f2f5; padding-bottom: 10px; }
+        .id-display { font-weight: bold; font-size: 1.4rem; color: #aab8c2; }
+        .title { font-size: 1.1rem; font-weight: 800; color: var(--accent-color); }
+        
+        .counter-area { text-align: center; font-size: 1rem; color: #e0245e; font-weight: bold; margin-bottom: 10px; height: 24px; }
+        .meaning-box { font-size: 1.4rem; font-weight: bold; line-height: 1.6; margin-bottom: 30px; color: #14171a; text-align: center; flex-grow: 1; display: flex; align-items: center; justify-content: center; padding: 0 10px; }
+        
+        .input-area { text-align: center; margin-bottom: 70px; }
+        input[type="text"] { width: 90%; padding: 15px; font-size: 1.2rem; border: 2px solid #e1e8ed; border-radius: 12px; outline: none; transition: border-color 0.2s; box-sizing: border-box; }
         input[type="text"]:focus { border-color: var(--accent-color); }
         
-        .msg { margin-top: 15px; height: 24px; font-size: 0.95rem; font-weight: bold; }
+        .msg { margin-top: 15px; min-height: 28px; font-size: 1rem; font-weight: bold; }
         .hint { color: #f45d48; }
         .correct { color: #17bf63; }
         .error { color: #e0245e; }
 
-        .mode-btn { position: absolute; bottom: 20px; right: 20px; padding: 10px 15px; background: var(--accent-color); color: white; border: none; border-radius: 20px; cursor: pointer; font-size: 0.85rem; font-weight: bold; transition: opacity 0.2s; }
-        .mode-btn:hover { opacity: 0.8; }
-        .mode-btn.all-mode { background: #657786; }
+        /* 右下：学習モードボタン */
+        .mode-btn { position: absolute; bottom: 20px; right: 20px; padding: 12px 20px; background: var(--accent-color); color: white; border: none; border-radius: 30px; cursor: pointer; font-size: 0.9rem; font-weight: bold; box-shadow: 0 4px 12px rgba(29, 161, 242, 0.3); transition: transform 0.2s, background 0.2s; }
+        .mode-btn:active { transform: scale(0.95); }
+        
+        /* 左下：スマホモードスイッチ周り */
+        .mobile-toggle-container { position: absolute; bottom: 20px; left: 20px; display: flex; align-items: center; gap: 12px; user-select: none; }
+        .emoji-icon { font-size: 2.2rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
+        
+        .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        input:checked + .slider { background-color: #17bf63; }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        /* スマホモード時の微調整 */
+        body.mobile-mode .meaning-box { font-size: 1.2rem; }
+        body.mobile-mode .quiz-container { padding: 20px; }
     </style>
 </head>
 <body>
@@ -46,14 +69,23 @@
     <div id="meaning" class="meaning-box">読み込み中...</div>
 
     <div class="input-area">
-        <input type="text" id="answer-input" placeholder="単語を入力してEnter" autocomplete="off">
+        <input type="text" id="answer-input" placeholder="答を入力してEnter" autocomplete="off">
         <div id="message" class="msg"></div>
+    </div>
+
+    <div class="mobile-toggle-container">
+        <span class="emoji-icon">📱</span>
+        <label class="switch">
+            <input type="checkbox" id="mobile-switch">
+            <span class="slider"></span>
+        </label>
     </div>
 
     <button id="mode-toggle" class="mode-btn">間違えた問題を学習</button>
 </div>
 
 <script>
+    // 単語データ
     const allWords = [
         {id: "475", word: "姑息", meaning: "一時しのぎに合わせ。その場のがれ。"},
         {id: "476", word: "地団駄を踏む", meaning: "悔しがって激しく何度も地面を踏む。"},
@@ -81,7 +113,7 @@
         {id: "498", word: "訝しい", meaning: "気がかりだ。不審だ。"},
         {id: "499", word: "悪びれる", meaning: "気後れして、おどおどする。"},
         {id: "500", word: "物怖じ", meaning: "物事を怖がること。おじけづくこと。"},
-        {id: "501", word: "仏頂面", meaning: "無愛想な顔。不機謙な顔つき。"},
+        {id: "501", word: "仏頂面", meaning: "無愛想な顔。不機嫌な顔つき。"},
         {id: "502", word: "拍子抜け", meaning: "気負っていたのに急に張り合いがなくなること。"},
         {id: "503", word: "あらがう", meaning: "逆らう。抵抗する。"},
         {id: "504", word: "あんぱい", meaning: "ほどあい。加減。物事や身体の具合。"},
@@ -210,7 +242,7 @@
         {id: "627", word: "好事家", meaning: "物好きな人。風流を好む人。"},
         {id: "628", word: "臆面もない", meaning: "気後れした様子がない。"},
         {id: "629", word: "鉄面皮", meaning: "あつかましいこと。恥知らず。"},
-        {id: "630", word: "ひひとかどの", meaning: "ひときわ優れている。一人前の。"},
+        {id: "630", word: "ひとかどの", meaning: "ひときわ優れている。一人前の。"},
         {id: "631", word: "面目", meaning: "世間からうける評価。名誉や体裁。"},
         {id: "632", word: "悄然", meaning: "元気がない。しおれたさま。"},
         {id: "633", word: "憮然", meaning: "失望や不満でやりきれないさま。"},
@@ -281,7 +313,7 @@
         {id: "698", word: "道すがら", meaning: "道を歩きながら。行く道の途中で。"}
     ];
 
-    let currentMode = "all"; // "all" or "wrong"
+    let currentMode = "all"; 
     let wrongWords = [];
     let currentQuestion = null;
     let missCount = 0;
@@ -292,6 +324,7 @@
     const messageEl = document.getElementById('message');
     const counterEl = document.getElementById('counter');
     const modeBtn = document.getElementById('mode-toggle');
+    const mobileSwitch = document.getElementById('mobile-switch');
 
     function nextQuestion() {
         missCount = 0;
@@ -302,12 +335,12 @@
         
         if (currentMode === "wrong") {
             if (targetList.length === 0) {
-                meaningEl.textContent = "🎉 クリア！すべての間違いを克服しました！";
+                meaningEl.textContent = "🎉 全問クリア！お見事！";
                 counterEl.textContent = "残り 0 問";
                 setTimeout(() => toggleMode(), 2000);
                 return;
             }
-            counterEl.textContent = `残り ${targetList.length} 問`;
+            counterEl.textContent = `間違い克服まで 残り ${targetList.length} 問`;
         } else {
             counterEl.textContent = "";
         }
@@ -323,52 +356,51 @@
     function toggleMode() {
         if (currentMode === "all") {
             if (wrongWords.length === 0) {
-                alert("まだ間違えた問題がありません。まずは通常モードで解いてみましょう！");
+                alert("まだ間違いがありません！");
                 return;
             }
             currentMode = "wrong";
             document.body.classList.add('wrong-mode');
-            modeBtn.textContent = "すべての単語を学習する";
-            modeBtn.classList.add('all-mode');
+            modeBtn.textContent = "全単語モードに戻る";
+            modeBtn.style.background = "#657786";
         } else {
             currentMode = "all";
             document.body.classList.remove('wrong-mode');
             modeBtn.textContent = "間違えた問題を学習";
-            modeBtn.classList.remove('all-mode');
+            modeBtn.style.background = "#1da1f2";
         }
         nextQuestion();
     }
+
+    mobileSwitch.addEventListener('change', function() {
+        if (this.checked) {
+            document.body.classList.add('mobile-mode');
+        } else {
+            document.body.classList.remove('mobile-mode');
+        }
+    });
 
     inputEl.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             const userAnswer = inputEl.value.trim();
             if (userAnswer === currentQuestion.word) {
-                // 正解
-                messageEl.textContent = "正解！";
+                messageEl.textContent = "✨ 正解！";
                 messageEl.className = "msg correct";
-                
                 if (currentMode === "wrong") {
-                    // 間違えたリストから削除
                     wrongWords = wrongWords.filter(w => w.id !== currentQuestion.id);
                 }
-                
                 setTimeout(nextQuestion, 600);
             } else {
-                // 不正解
                 missCount++;
-                
-                // 間違えたリストに追加（まだ入っていなければ）
                 if (!wrongWords.some(w => w.id === currentQuestion.id)) {
                     wrongWords.push(currentQuestion);
                 }
-
                 if (missCount >= 3) {
-                    messageEl.textContent = `答えは「${currentQuestion.word}」でした。`;
+                    messageEl.textContent = `正解は【${currentQuestion.word}】`;
                     messageEl.className = "msg error";
                     setTimeout(nextQuestion, 2000);
                 } else {
-                    const firstChar = currentQuestion.word.charAt(0);
-                    messageEl.textContent = `不正解！ ヒント：一文字目は「${firstChar}」`;
+                    messageEl.textContent = `ヒント：${currentQuestion.word.charAt(0)}...`;
                     messageEl.className = "msg hint";
                     inputEl.value = "";
                 }
@@ -377,8 +409,6 @@
     });
 
     modeBtn.addEventListener('click', toggleMode);
-
-    // 初期起動
     nextQuestion();
 </script>
 
